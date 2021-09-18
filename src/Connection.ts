@@ -104,7 +104,7 @@ class SSHConnection {
           process.stdin.destroy()
           connection.end()
           await this.shutdown()
-          return resolve()
+          return resolve(true)
         }).stderr.on('data', (data) => {
           return reject(data)
         })
@@ -227,7 +227,7 @@ class SSHConnection {
           stream.pipe(socket)
         })
       }).listen(options.fromPort, 'localhost', () => {
-        return resolve()
+        return resolve(true)
       })
     })
   }
