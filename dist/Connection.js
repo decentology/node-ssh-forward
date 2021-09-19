@@ -118,13 +118,7 @@ class SSHConnection {
         this.debug('Connecting to "%s"', host);
         const connection = new ssh2_1.Client();
         return new Promise(async (resolve, reject) => {
-            const options = {
-                host,
-                port: this.options.endPort,
-                username: this.options.username,
-                password: this.options.password,
-                privateKey: this.options.privateKey
-            };
+            const options = Object.assign({ host, port: this.options.endPort }, this.options);
             if (this.options.agentForward) {
                 options['agentForward'] = true;
                 // see https://github.com/mscdex/ssh2#client for agents on Windows
@@ -182,14 +176,19 @@ class SSHConnection {
         const connection = await this.establish();
         return new Promise((resolve, reject) => {
             this.server = net.createServer((socket) => {
-                this.debug('Forwarding connection from "localhost:%d" to "%s:%d"', options.fromPort, options.toHost, options.toPort);
-                connection.forwardOut('localhost', options.fromPort, options.toHost || 'localhost', options.toPort, (error, stream) => {
-                    if (error) {
-                        return reject(error);
-                    }
-                    socket.pipe(stream);
-                    stream.pipe(socket);
-                });
+                try {
+                    this.debug('Forwarding connection from "localhost:%d" to "%s:%d"', options.fromPort, options.toHost, options.toPort);
+                    connection.forwardOut('localhost', options.fromPort, options.toHost || 'localhost', options.toPort, (error, stream) => {
+                        if (error) {
+                            return reject(error);
+                        }
+                        socket.pipe(stream);
+                        stream.pipe(socket);
+                    });
+                }
+                catch (error) {
+                    this.debug(`Forwarding socket failed: ${error.message}`);
+                }
             }).listen(options.fromPort, 'localhost', () => {
                 return resolve(true);
             });

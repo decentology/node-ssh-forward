@@ -1,17 +1,16 @@
-/// <reference types="node" />
-interface Options {
-    username?: string;
-    password?: string;
-    privateKey?: string | Buffer;
-    agentForward?: boolean;
+import { ConnectConfig } from 'ssh2';
+/**
+ * @prop {number} [endPort] - endPort is identical to port and can be used for clarity.
+ * @prop {number} [port] - port is the port of the SSH server. Recommend using endPort for clarity
+ */
+declare type Options = {
     bastionHost?: string;
-    passphrase?: string;
     endPort?: number;
     endHost: string;
     agentSocket?: string;
     skipAutoPrivateKey?: boolean;
     noReadline?: boolean;
-}
+} & ConnectConfig;
 interface ForwardingOptions {
     fromPort: number;
     toPort: number;
