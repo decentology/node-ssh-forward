@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { Client } from 'ssh2'
+import { Client, ConnectConfig } from 'ssh2'
 import * as net from 'net'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -23,19 +23,18 @@ import * as path from 'path'
 import *  as readline from 'readline'
 import * as debug from 'debug'
 
-interface Options {
-  username?: string
-  password?: string
-  privateKey?: string | Buffer
-  agentForward? : boolean
+/**
+ * @prop {number} [endPort] - endPort is identical to port and can be used for clarity.
+ * @prop {number} [port] - port is the port of the SSH server. Recommend using endPort for clarity
+ */
+type Options = {
   bastionHost?: string
-  passphrase?: string
   endPort?: number
   endHost: string
   agentSocket?: string,
   skipAutoPrivateKey?: boolean
   noReadline?: boolean
-}
+} & ConnectConfig
 
 interface ForwardingOptions {
   fromPort: number
@@ -151,9 +150,7 @@ class SSHConnection {
       const options = {
         host,
         port: this.options.endPort,
-        username: this.options.username,
-        password: this.options.password,
-        privateKey: this.options.privateKey
+        ...this.options
       }
       if (this.options.agentForward) {
         options['agentForward'] = true
@@ -202,7 +199,7 @@ class SSHConnection {
     })
   }
 
-  private async getPassphrase() {
+  private async getPassphrase(): Promise<string> {
     return new Promise((resolve) => {
       const rl = readline.createInterface({
         input: process.stdin,
@@ -219,14 +216,14 @@ class SSHConnection {
     return new Promise((resolve, reject) => {
       this.server = net.createServer((socket) => {
         try {
-        this.debug('Forwarding connection from "localhost:%d" to "%s:%d"', options.fromPort, options.toHost, options.toPort)
-        connection.forwardOut('localhost', options.fromPort, options.toHost || 'localhost', options.toPort, (error, stream) => {
-          if (error) {
-            return reject(error)
-          }
-          socket.pipe(stream)
-          stream.pipe(socket)
-        })
+          this.debug('Forwarding connection from "localhost:%d" to "%s:%d"', options.fromPort, options.toHost, options.toPort)
+          connection.forwardOut('localhost', options.fromPort, options.toHost || 'localhost', options.toPort, (error, stream) => {
+            if (error) {
+              return reject(error)
+            }
+            socket.pipe(stream)
+            stream.pipe(socket)
+          })
           
         } catch (error) {
           this.debug(`Forwarding socket failed: ${(error as Error).message}`);
