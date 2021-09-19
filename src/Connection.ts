@@ -218,6 +218,7 @@ class SSHConnection {
     const connection = await this.establish()
     return new Promise((resolve, reject) => {
       this.server = net.createServer((socket) => {
+        try {
         this.debug('Forwarding connection from "localhost:%d" to "%s:%d"', options.fromPort, options.toHost, options.toPort)
         connection.forwardOut('localhost', options.fromPort, options.toHost || 'localhost', options.toPort, (error, stream) => {
           if (error) {
@@ -226,6 +227,10 @@ class SSHConnection {
           socket.pipe(stream)
           stream.pipe(socket)
         })
+          
+        } catch (error) {
+          this.debug(`Forwarding socket failed: ${(error as Error).message}`);
+        }
       }).listen(options.fromPort, 'localhost', () => {
         return resolve(true)
       })
